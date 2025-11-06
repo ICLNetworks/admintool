@@ -60,8 +60,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['runview'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQL Dashboard</title>
 <style>
-/* Keep your previous CSS for tabs, forms, table, etc. */
-</style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    margin:0; padding:20px; background:#f0f2f5;
+}
+.container { max-width: 1100px; margin:auto; }
+
+/* Tabs */
+.nav-tabs { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:20px; }
+.nav-tabs button {
+padding:10px 20px; border:none; background:#e2e6ea; border-radius:8px 8px 0 0;
+cursor:pointer; font-weight:500; transition:0.3s;
+}
+.nav-tabs button.active { background:#007bff; color:#fff; }
+
+/* Tab content */
+.tab-content {
+display:none; background:#fff; padding:25px; border-radius:12px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+.tab-content form label { display:block; margin-top:10px; font-weight:500; }
+.tab-content input, .tab-content select, .tab-content textarea {
+width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:14px;
+}
+.tab-content select[multiple] { height:120px; }
+.tab-content button { margin-top:15px; padding:12px 20px; background:#007bff; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:0.3s; }
+.tab-content button:hover { background:#0056b3; }
+
+/* Table */
+table { width:100%; border-collapse:collapse; margin-top:20px; }
+th, td { border:1px solid #999; padding:8px; text-align:left; }
+th { background:#007bff; color:#fff; }
+
+/* Error */
+.error { color:red; margin-top:15px; }
+
+/* Responsive */
+@media(max-width:600px){
+.nav-tabs { flex-direction:column; }
+.nav-tabs button { width:100%; margin-bottom:5px; }
+} </style>
+
 <script>
 function openTab(tabName){
     document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
