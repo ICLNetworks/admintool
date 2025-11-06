@@ -117,6 +117,7 @@ th { background:#007bff; color:#fff; }
 
     <label>Where:</label>
     <textarea name="where" rows="2"></textarea>
+    <p id="whereError" style="color:red; margin-top:5px; display:none;"></p>
 
     <label>Order By:</label>
     <select name="orderby" id="orderbySelect">
@@ -206,12 +207,16 @@ document.getElementById('tableSelect').addEventListener('change', function(){
     .then(cols=>{
         const sel = document.getElementById('columnsSelect');
         sel.innerHTML = '';
+        cols.forEach(c=>{
+            const opt = document.createElement('option');
+            opt.value=c; opt.text=c;
+            sel.add(opt);
+        });
         const orderSel = document.getElementById('orderbySelect');
         orderSel.innerHTML = '<option value="">-- None --</option>';
         cols.forEach(c=>{
             const opt = document.createElement('option');
             opt.value=c; opt.text=c;
-            sel.add(opt);
             orderSel.add(opt);
         });
         document.getElementById('columnsContainer').style.display='block';
