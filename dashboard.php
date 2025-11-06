@@ -13,27 +13,25 @@ $tables = [];
 $res = $conn->query("SHOW TABLES");
 while ($row = $res->fetch_array()) $tables[] = $row[0];
 
-// Initialize variables
-$selectedTable = $_POST['table'] ?? "";
-$columns = [];
-$query = "";
-$result = null;
-$error = "";
-
-// Get columns if table selected
-if ($selectedTable) {
-    $colres = $conn->query("SHOW COLUMNS FROM `$selectedTable`");
+// AJAX: fetch columns for a selected table
+if (isset($_POST['getColumns']) && $_POST['getColumns']) {
+    $table = $_POST['getColumns'];
+    $columns = [];
+    $colres = $conn->query("SHOW COLUMNS FROM `$table`");
     while ($col = $colres->fetch_assoc()) $columns[] = $col['Field'];
+    header('Content-Type: application/json');
+    echo json_encode($columns);
+    exit;
 }
 
-// Handle View Query
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['runview'])) {
-    $table = $_POST['table'];
-    $selectCols = isset($_POST['columns']) ? implode(",", $_POST['columns']) : "*";
-    $where = trim($_POST['where']);
-    $orderby = trim($_POST['orderby']);
+// AJAX: run query
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    $table = $_POST['table'] ?? "";
+    $selectCols = isset($_POST['columns']) && count($_POST['columns'])>0 ? implode(",", $_POST['columns']) : "*";
+    $where = trim($_POST['where'] ?? '');
+    $orderby = trim($_POST['orderby'] ?? '');
     $orderdir = $_POST['orderdir'] ?? "ASC";
-    $limit = trim($_POST['limit']);
+    $limit = trim($_POST['limit'] ?? '');
 
     $query = "SELECT $selectCols FROM `$table`";
     if ($where) $query .= " WHERE $where";
@@ -41,18 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['runview'])) {
     if ($limit) $query .= " LIMIT $limit";
 
     $result = $conn->query($query) ?: null;
-    if (!$result) $error = $conn->error;
-
-    // AJAX response for modal
-    if (isset($_POST['ajax'])) {
-        $data = ['error'=>$error,'records'=>[]];
-        if ($result && $result instanceof mysqli_result && !$error) {
-            while($row=$result->fetch_assoc()) $data['records'][]=$row;
-        }
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit; // stop full page render
+    $data = ['error'=>$conn->error,'records'=>[]];
+    if ($result && $result instanceof mysqli_result && !$data['error']) {
+        while($row=$result->fetch_assoc()) $data['records'][]=$row;
     }
+
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
 }
 ?>
 
@@ -66,45 +60,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['runview'])) {
 <style>
 body { font-family:'Segoe UI',sans-serif; margin:0;padding:20px; background:#f0f2f5; }
 .container { max-width:1100px; margin:auto; }
-
 .nav-tabs { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:20px; }
 .nav-tabs button { padding:10px 20px; border:none; background:#e2e6ea; border-radius:8px 8px 0 0; cursor:pointer; font-weight:500; transition:0.3s; }
 .nav-tabs button.active { background:#007bff; color:#fff; }
-
 .tab-content { display:none; background:#fff; padding:25px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
 .tab-content form label { display:block; margin-top:10px; font-weight:500; }
 .tab-content input, .tab-content select, .tab-content textarea { width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:14px; }
 .tab-content select[multiple] { height:120px; }
 .tab-content button { margin-top:15px; padding:12px 20px; background:#007bff; color:#fff; border:none; border-radius:8px; cursor:pointer; transition:0.3s; }
 .tab-content button:hover { background:#0056b3; }
-
 table { width:100%; border-collapse:collapse; margin-top:20px; }
 th, td { border:1px solid #999; padding:8px; text-align:left; }
 th { background:#007bff; color:#fff; }
-
 .error { color:red; margin-top:15px; }
-
 @media(max-width:600px){
 .nav-tabs { flex-direction:column; }
 .nav-tabs button { width:100%; margin-bottom:5px; }
 }
-
 /* Modal */
-#resultModal {
-display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-background:rgba(0,0,0,0.5); justify-content:center; align-items:center;
-}
-.modal-content {
-background:#fff; padding:20px; border-radius:10px; max-width:90%; max-height:90%; overflow:auto;
-}
+#resultModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+.modal-content { background:#fff; padding:20px; border-radius:10px; max-width:90%; max-height:90%; overflow:auto; }
 .modal-header { display:flex; justify-content:space-between; align-items:center; }
 .modal-header h3 { margin:0; }
 .modal-header button { background:red; color:#fff; border:none; border-radius:5px; cursor:pointer; padding:5px 10px; }
-
 .pagination { margin-top:10px; display:flex; gap:5px; flex-wrap:wrap; }
 .pagination button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#007bff; color:#fff; }
-.pagination button.active { background:#0056b3; } </style>
-
+.pagination button.active { background:#0056b3; }
+</style>
 </head>
 <body>
 <div class="container">
@@ -119,52 +101,39 @@ background:#fff; padding:20px; border-radius:10px; max-width:90%; max-height:90%
 <!-- View Tab -->
 
 <div id="viewTab" class="tab-content">
-<form method="post" id="viewForm">
+<form id="viewForm">
     <label>Table:</label>
-    <select name="table" onchange="this.form.submit()">
+    <select name="table" id="tableSelect">
         <option value="">--Select Table--</option>
         <?php foreach($tables as $t): ?>
-        <option value="<?= $t ?>" <?= $t==$selectedTable?'selected':'' ?>><?= $t ?></option>
+        <option value="<?= $t ?>"><?= $t ?></option>
         <?php endforeach; ?>
     </select>
 
-<?php if($selectedTable): ?>
+<div id="columnsContainer" style="display:none;">
     <label>Select Columns:</label>
-    <select name="columns[]" multiple>
-        <?php foreach($columns as $c): ?>
-        <option value="<?= $c ?>" <?= (isset($_POST['columns']) && in_array($c,$_POST['columns']))?'selected':'' ?>><?= $c ?></option>
-        <?php endforeach; ?>
-    </select>
+    <select name="columns[]" id="columnsSelect" multiple></select>
 
     <label>Where:</label>
-    <textarea name="where" rows="2"><?= htmlspecialchars($_POST['where'] ?? '') ?></textarea>
+    <textarea name="where" rows="2"></textarea>
 
     <label>Order By:</label>
-    <input type="text" name="orderby" value="<?= htmlspecialchars($_POST['orderby'] ?? '') ?>">
+    <input type="text" name="orderby">
     <select name="orderdir">
-        <option value="ASC" <?= (($_POST['orderdir'] ?? '')=='ASC')?'selected':'' ?>>ASC</option>
-        <option value="DESC" <?= (($_POST['orderdir'] ?? '')=='DESC')?'selected':'' ?>>DESC</option>
+        <option value="ASC">ASC</option>
+        <option value="DESC">DESC</option>
     </select>
 
     <label>Limit:</label>
-    <input type="number" name="limit" value="<?= htmlspecialchars($_POST['limit'] ?? '') ?>">
+    <input type="number" name="limit">
 
-    <button name="runview" type="submit">Run</button>
-<?php endif; ?>
-</form>
-
-<?php if($query): ?><p><strong>Executed Query:</strong> <?= htmlspecialchars($query) ?></p><?php endif; ?>
-
-<?php if($error): ?><p class="error">Error: <?= htmlspecialchars($error) ?></p><?php endif; ?>
-
+    <button type="submit">Run</button>
 </div>
 
-<!-- Update Tab -->
+</form>
+</div>
 
 <div id="updateTab" class="tab-content"><p>Update functionality coming soon.</p></div>
-
-<!-- Delete Tab -->
-
 <div id="deleteTab" class="tab-content"><p>Delete functionality coming soon.</p></div>
 </div>
 
@@ -193,6 +162,7 @@ function openTab(tabName){
     document.getElementById(tabName+'Btn').classList.add('active');
 }
 
+// Render modal page
 function renderPage(){
     const start = (currentPage-1)*recordsPerPage;
     const end = start + recordsPerPage;
@@ -219,6 +189,30 @@ function renderPage(){
     document.getElementById('pagination').innerHTML=pgHtml;
 }
 
+// Table change: fetch columns via AJAX
+document.getElementById('tableSelect').addEventListener('change', function(){
+    const table = this.value;
+    if(!table){ document.getElementById('columnsContainer').style.display='none'; return; }
+
+    fetch('', {
+        method:'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body:'getColumns='+encodeURIComponent(table)
+    })
+    .then(res=>res.json())
+    .then(cols=>{
+        const sel = document.getElementById('columnsSelect');
+        sel.innerHTML = '';
+        cols.forEach(c=>{
+            const opt = document.createElement('option');
+            opt.value=c; opt.text=c;
+            sel.add(opt);
+        });
+        document.getElementById('columnsContainer').style.display='block';
+    });
+});
+
+// Run query via AJAX
 document.getElementById('viewForm').addEventListener('submit', function(e){
     e.preventDefault();
     const formData = new FormData(this);
