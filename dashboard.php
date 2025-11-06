@@ -16,7 +16,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin:0; padding:20px; background:#f5f5f5;
 }
-.container { max-width: 900px; margin:auto; }
+.container { max-width: 1000px; margin:auto; }
 
 /* Header */
 h2 {
@@ -25,44 +25,40 @@ h2 {
     color:#007bff;
 }
 
-/* Navigation Buttons */
+/* Navigation Tabs */
 .navbar {
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
     gap:15px;
-    margin-bottom:40px;
+    margin-bottom:20px;
 }
-.navbar a {
+.navbar button {
     padding:12px 25px;
     background:#007bff;
     color:white;
-    text-decoration:none;
     font-weight:500;
+    border:none;
     border-radius:8px;
+    cursor:pointer;
     transition: background 0.3s;
 }
-.navbar a:hover {
-    background:#0056b3;
-}
+.navbar button:hover { background:#0056b3; }
+.navbar button.active { background:#28a745; } /* active tab color */
 
-/* Active Tab */
-.navbar a.active {
-    background:#28a745; /* Green for active tab */
-}
-
-/* Logout Button */
-.logout {
-    background:#dc3545 !important;
-}
-.logout:hover {
-    background:#a71d2a !important;
+/* Content Panels */
+.tabcontent {
+    display:none;
+    background:white;
+    padding:20px;
+    border-radius:8px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
 /* Responsive */
 @media(max-width:600px){
     .navbar { flex-direction:column; align-items:center; }
-    .navbar a { width:100%; text-align:center; }
+    .navbar button { width:100%; text-align:center; }
 }
 </style>
 </head>
@@ -70,11 +66,47 @@ h2 {
 <div class="container">
     <h2>SQL Console Dashboard</h2>
     <div class="navbar">
-        <a href="view.php" class="active">View</a>
-        <a href="update.php">Update</a>
-        <a href="delete.php">Delete</a>
-        <a href="logout.php" class="logout">Logout</a>
+        <button class="tablink active" onclick="openTab(event,'view')">View</button>
+        <button class="tablink" onclick="openTab(event,'update')">Update</button>
+        <button class="tablink" onclick="openTab(event,'delete')">Delete</button>
+        <button onclick="window.location='logout.php'" style="background:#dc3545;">Logout</button>
+    </div>
+
+    <!-- View Tab -->
+    <div id="view" class="tabcontent" style="display:block;">
+        <?php include 'view.php'; ?>
+    </div>
+
+    <!-- Update Tab -->
+    <div id="update" class="tabcontent">
+        <?php include 'update.php'; ?>
+    </div>
+
+    <!-- Delete Tab -->
+    <div id="delete" class="tabcontent">
+        <?php include 'delete.php'; ?>
     </div>
 </div>
+
+<script>
+function openTab(evt, tabName) {
+    // Hide all tab contents
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+
+    // Remove active class from all buttons
+    tablinks = document.getElementsByClassName("tablink");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("active");
+    }
+
+    // Show current tab and set active button
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.classList.add("active");
+}
+</script>
 </body>
 </html>
