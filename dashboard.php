@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SQL Dashboard</title>
 <style>
+* { box-sizing: border-box; }
 body { font-family:'Segoe UI',sans-serif; margin:0;padding:20px; background:#f0f2f5; }
 .container { max-width:1100px; margin:auto; }
 .nav-tabs { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:20px; }
@@ -118,7 +119,9 @@ th { background:#007bff; color:#fff; }
     <textarea name="where" rows="2"></textarea>
 
     <label>Order By:</label>
-    <input type="text" name="orderby">
+    <select name="orderby" id="orderbySelect">
+        <option value="">-- None --</option>
+    </select>
     <select name="orderdir">
         <option value="ASC">ASC</option>
         <option value="DESC">DESC</option>
@@ -203,10 +206,13 @@ document.getElementById('tableSelect').addEventListener('change', function(){
     .then(cols=>{
         const sel = document.getElementById('columnsSelect');
         sel.innerHTML = '';
+        const orderSel = document.getElementById('orderbySelect');
+        orderSel.innerHTML = '<option value="">-- None --</option>';
         cols.forEach(c=>{
             const opt = document.createElement('option');
             opt.value=c; opt.text=c;
             sel.add(opt);
+            orderSel.add(opt);
         });
         document.getElementById('columnsContainer').style.display='block';
     });
