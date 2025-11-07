@@ -102,39 +102,39 @@ th { background:#007bff; color:#fff; }
 <!-- View Tab -->
 
 <div id="viewTab" class="tab-content">
-<form id="viewForm">
-    <label>Table:</label>
-    <select name="table" id="tableSelect">
-        <option value="">--Select Table--</option>
-        <?php foreach($tables as $t): ?>
-        <option value="<?= $t ?>"><?= $t ?></option>
-        <?php endforeach; ?>
-    </select>
+    <form id="viewForm">
+        <label>Table:</label>
+        <select name="table" id="tableSelect">
+            <option value="">--Select Table--</option>
+            <?php foreach($tables as $t): ?>
+                <option value="<?= $t ?>"><?= $t ?></option>
+            <?php endforeach; ?>
+        </select>
 
-<div id="columnsContainer" style="display:none;">
-    <label>Select Columns:</label>
-    <select name="columns[]" id="columnsSelect" multiple></select>
+        <div id="columnsContainer" style="display:none;">
+            <label>Select Columns:</label>
+            <select name="columns[]" id="columnsSelect" multiple></select>
 
-    <label>Where:</label>
-    <textarea name="where" rows="2"></textarea>
-    <p id="whereError" style="color:red; margin-top:5px; display:none;"></p>
+            <label>Where:</label>
+            <textarea name="where" rows="2"></textarea>
+            <p id="whereError" style="color:red; margin-top:5px; display:none;"></p>
 
-    <label>Order By:</label>
-    <select name="orderby" id="orderbySelect">
-        <option value="">-- None --</option>
-    </select>
-    <select name="orderdir">
-        <option value="ASC">ASC</option>
-        <option value="DESC">DESC</option>
-    </select>
+            <label>Order By:</label>
+            <select name="orderby" id="orderbySelect">
+                <option value="">-- None --</option>
+            </select>
+            <select name="orderdir">
+                <option value="ASC">ASC</option>
+                <option value="DESC">DESC</option>
+            </select>
 
-    <label>Limit:</label>
-    <input type="number" name="limit">
+            <label>Limit:</label>
+            <input type="number" name="limit">
 
-    <button type="submit">Run</button>
-</div>
+            <button type="submit">Run</button>
+        </div>
 
-</form>
+    </form>
 </div>
 
 <div id="updateTab" class="tab-content"><p>Update functionality coming soon.</p></div>
