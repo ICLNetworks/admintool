@@ -324,6 +324,13 @@ document.getElementById('updateTable').addEventListener('change', function(){
     });
 });
 
+document.addEventListener('click', function(e){
+    if(e.target.classList.contains('remove-set-row')){
+        e.target.parentElement.remove();
+        refreshSetDropdowns();
+    }
+});
+
 function columnSelect(name){
     let html = `<select name="${name}" onchange="refreshSetDropdowns()"><option value="">-- Column --</option>`;
     updColumns.forEach(c => html += `<option value="${c}">${c}</option>`);
@@ -332,9 +339,10 @@ function columnSelect(name){
 
 function addSetRow(){
     document.getElementById('setRows').insertAdjacentHTML('beforeend',`
-        <div class="set-row" style="display:flex; gap:10px; margin-top:5px;">
+        <div class="set-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
             ${columnSelect('set_col[]')}
             <input type="text" name="set_val[]" placeholder="Enter Value">
+            <button type="button" class="remove-set-row" style="background:red; padding:5px 10px; border-radius:5px;">✖</button>
         </div>
     `);
     refreshSetDropdowns();
@@ -364,12 +372,19 @@ function refreshSetDropdowns(){
 
 function addWhereRow(){
     document.getElementById('whereRows').insertAdjacentHTML('beforeend',`
-        <div style="display:flex; gap:10px; margin-top:5px;">
+        <div class="where-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
             ${columnSelect('where_col[]')}
             <input type="text" name="where_val[]" placeholder="Enter Value">
+            <button type="button" class="remove-where-row" style="background:red; padding:5px 10px; border-radius:5px;">✖</button>
         </div>
     `);
 }
+
+document.addEventListener('click', function(e){
+    if(e.target.classList.contains('remove-where-row')){
+        e.target.parentElement.remove();
+    }
+});
 
 document.getElementById('updateForm').addEventListener('submit', function(e){
     e.preventDefault();
