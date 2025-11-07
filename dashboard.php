@@ -64,7 +64,10 @@ if (isset($_POST['updateAjax'])) {
 
     $whereParts = [];
     foreach($whereCols as $i=>$c){
-        if($c !== "") $whereParts[] = "`$c` = ?";
+        if($c !== ""){
+            $op = $_POST['where_op'][$i] ?? '=';
+            $whereParts[] = "`$c` $op ?";
+        }
     }
 
     if(empty($setParts) || empty($whereParts)){
@@ -374,7 +377,19 @@ function addWhereRow(){
     document.getElementById('whereRows').insertAdjacentHTML('beforeend',`
         <div class="where-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
             ${columnSelect('where_col[]')}
+
+            <select name="where_op[]" style="width:120px;">
+                <option value="=">=</option>
+                <option value="!=">!=</option>
+                <option value=">">></option>
+                <option value="<"><</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value="LIKE">LIKE</option>
+            </select>
+
             <input type="text" name="where_val[]" placeholder="Enter Value">
+
             <button type="button" class="remove-where-row" style="background:red; padding:5px 10px; border-radius:5px;">✖</button>
         </div>
     `);
