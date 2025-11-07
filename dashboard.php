@@ -325,18 +325,41 @@ document.getElementById('updateTable').addEventListener('change', function(){
 });
 
 function columnSelect(name){
-    let html = `<select name="${name}"><option value="">-- Column --</option>`;
+    let html = `<select name="${name}" onchange="refreshSetDropdowns()"><option value="">-- Column --</option>`;
     updColumns.forEach(c => html += `<option value="${c}">${c}</option>`);
     return html + `</select>`;
 }
 
 function addSetRow(){
     document.getElementById('setRows').insertAdjacentHTML('beforeend',`
-        <div style="display:flex; gap:10px; margin-top:5px;">
+        <div class="set-row" style="display:flex; gap:10px; margin-top:5px;">
             ${columnSelect('set_col[]')}
             <input type="text" name="set_val[]" placeholder="Enter Value">
         </div>
     `);
+    refreshSetDropdowns();
+}
+
+function refreshSetDropdowns(){
+    const selects = document.querySelectorAll('select[name="set_col[]"]');
+
+    // Collect selected column names
+    const selected = [...selects].map(s => s.value).filter(v => v !== "");
+
+    // Refresh dropdowns
+    selects.forEach(sel => {
+        const currentValue = sel.value;
+        sel.innerHTML = `<option value="">-- Column --</option>`;
+
+        updColumns.forEach(c => {
+            // If column already selected in another dropdown, disable it
+            const disabled = (selected.includes(c) && c !== currentValue) ? "disabled" : "";
+            sel.innerHTML += `<option value="${c}" ${disabled}>${c}</option>`;
+        });
+
+        // Restore previous selected value
+        sel.value = currentValue;
+    });
 }
 
 function addWhereRow(){
