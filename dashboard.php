@@ -93,6 +93,46 @@ if (isset($_POST['updateAjax'])) {
     echo json_encode(['error'=>$stmt->error,'affected'=>$stmt->affected_rows]);
     exit;
 }
+
+// PREVIEW UPDATE - SELECT rows first
+if(isset($_POST['previewUpdate'])){
+    $table = $_POST['table'];
+    $whereCols = $_POST['where_col'] ?? [];
+    $whereVals = $_POST['where_val'] ?? [];
+    $ops = $_POST['where_op'] ?? [];
+    $joins = $_POST['where_join'] ?? [];
+
+    $whereParts = [];
+    foreach($whereCols as $i=>$c){
+        if($c !== ""){
+            $op = $ops[$i] ?? '=';
+            $join = $joins[$i] ?? 'AND';
+            $condition = "`$c` $op ?";
+            $whereParts[] = ($i == 0) ? $condition : "$join $condition";
+        }
+    }
+
+    $sql = "SELECT * FROM `$table` WHERE ".implode(" ", $whereParts);
+    $stmt = $conn->prepare($sql);
+
+    // Apply LIKE logic again
+    foreach($whereVals as $i => $v){
+        $op = $ops[$i] ?? '=';
+        if(strtoupper($op) == "LIKE" && strpos($v,'%') === false){
+            $whereVals[$i] = "%{$v}%";
+        }
+    }
+
+    $stmt->bind_param(str_repeat("s",count($whereVals)), ...$whereVals);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $records = [];
+    while($row = $res->fetch_assoc()) $records[] = $row;
+
+    echo json_encode(['error'=>$stmt->error,'records'=>$records]);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -219,7 +259,7 @@ th { background:#007bff; color:#fff; }
             <h3 style="margin-top:20px;">WHERE (Conditions)</h3>
             <div id="whereRows"></div>
             <button type="button" onclick="addWhereRow()">+ Add Condition</button>
-            <button type="submit" style="margin-top:20px;">UPDATE</button>
+            <button type="submit" style="margin-top:20px;">Fetch Details</button>
             <p id="updateMessage" style="margin-top:10px; font-weight:bold;"></p>
         </div>
     </form>
@@ -237,6 +277,16 @@ th { background:#007bff; color:#fff; }
         </div>
         <div id="modalTable"></div>
         <div class="pagination" id="pagination"></div>
+    </div>
+</div>
+
+<div id="confirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:10px; width:90%; max-width:800px;">
+        <h3>Records that will be updated</h3>
+        <div id="confirmContent" style="max-height:400px; overflow:auto;"></div>
+
+        <button id="confirmUpdate" style="background:green; margin-top:15px;">✅ Confirm Update</button>
+        <button onclick="document.getElementById('confirmModal').style.display='none'" style="background:red; margin-top:15px;">❌ Cancel</button>
     </div>
 </div>
 
@@ -431,15 +481,52 @@ function addWhereRow(){
 
 document.getElementById('updateForm').addEventListener('submit', function(e){
     e.preventDefault();
-    const formData = new FormData(this);
-    formData.append('updateAjax',1);
+    const fd = new FormData(this);
+    fd.append('previewUpdate',1);
 
-    fetch('', { method:'POST', body:formData })
+    fetch('', { method:'POST', body:fd })
+    .then(r=>r.json())
+    .then(data=>{
+        if(data.error){
+            updateMsg.style.color='red';
+            updateMsg.innerText=data.error;
+            return;
+        }
+
+        if(data.records.length === 0){
+            updateMsg.style.color='red';
+            updateMsg.innerText='No matching records found.';
+            return;
+        }
+
+        // show confirmation
+
+        let html = '<table><tr>';
+        Object.keys(data.records[0]).forEach(h => html += `<th>${h}</th>`);
+        html += '</tr>';
+
+        data.records.forEach(row=>{
+            html += '<tr>';
+            Object.values(row).forEach(val => html += `<td>${val}</td>`);
+            html += '</tr>';
+        });
+        html += '</table>';
+
+        document.getElementById('confirmContent').innerHTML = html;
+        document.getElementById('confirmModal').style.display = 'flex';
+    });
+});
+
+document.getElementById('confirmUpdate').addEventListener('click', function(){
+    const fd = new FormData(document.getElementById('updateForm'));
+    fd.append('updateAjax',1);
+
+    fetch('', { method:'POST', body:fd })
     .then(r=>r.json())
     .then(d=>{
-        const msg = document.getElementById('updateMessage');
-        msg.style.color = d.error ? 'red' : 'green';
-        msg.innerText = d.error ? d.error : `✅ Updated ${d.affected} row(s) successfully`;
+        updateMsg.style.color = d.error ? 'red' : 'green';
+        updateMsg.innerText = d.error ? d.error : "✅ Updated "+d.affected+" record(s)";
+        document.getElementById('confirmModal').style.display='none';
     });
 });
 
