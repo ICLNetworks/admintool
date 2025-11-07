@@ -124,6 +124,25 @@ th { background:#007bff; color:#fff; }
 .pagination { margin-top:10px; display:flex; gap:5px; flex-wrap:wrap; }
 .pagination button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#007bff; color:#fff; }
 .pagination button.active { background:#0056b3; }
+.remove-row {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    transition: 0.2s;
+}
+.remove-row:hover {
+    background: #d90000;
+    transform: scale(1.1);
+}
 </style>
 </head>
 <body>
@@ -328,9 +347,9 @@ document.getElementById('updateTable').addEventListener('change', function(){
 });
 
 document.addEventListener('click', function(e){
-    if(e.target.classList.contains('remove-set-row')){
+    if(e.target.classList.contains('remove-row')){
         e.target.parentElement.remove();
-        refreshSetDropdowns();
+        refreshSetDropdowns(); // keeps dropdown unique rules working
     }
 });
 
@@ -345,7 +364,7 @@ function addSetRow(){
         <div class="set-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
             ${columnSelect('set_col[]')}
             <input type="text" name="set_val[]" placeholder="Enter Value">
-            <button type="button" class="remove-set-row" style="background:red; padding:5px 10px; border-radius:5px;">✖</button>
+            <button type="button" class="remove-row">✕</button>
         </div>
     `);
     refreshSetDropdowns();
@@ -377,7 +396,6 @@ function addWhereRow(){
     document.getElementById('whereRows').insertAdjacentHTML('beforeend',`
         <div class="where-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
             ${columnSelect('where_col[]')}
-
             <select name="where_op[]" style="width:120px;">
                 <option value="=">=</option>
                 <option value="!=">!=</option>
@@ -387,19 +405,11 @@ function addWhereRow(){
                 <option value="<="><=</option>
                 <option value="LIKE">LIKE</option>
             </select>
-
             <input type="text" name="where_val[]" placeholder="Enter Value">
-
-            <button type="button" class="remove-where-row" style="background:red; padding:5px 10px; border-radius:5px;">✖</button>
+            <button type="button" class="remove-row">✕</button>
         </div>
     `);
 }
-
-document.addEventListener('click', function(e){
-    if(e.target.classList.contains('remove-where-row')){
-        e.target.parentElement.remove();
-    }
-});
 
 document.getElementById('updateForm').addEventListener('submit', function(e){
     e.preventDefault();
