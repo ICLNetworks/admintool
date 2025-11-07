@@ -66,7 +66,15 @@ if (isset($_POST['updateAjax'])) {
     foreach($whereCols as $i=>$c){
         if($c !== ""){
             $op = $_POST['where_op'][$i] ?? '=';
-            $whereParts[] = "`$c` $op ?";
+            $join = $_POST['where_join'][$i] ?? 'AND'; // default AND
+            $condition = "`$c` $op ?";
+
+            // first row should NOT have AND/OR prefix
+            if($i == 0){
+                $whereParts[] = $condition;
+            } else {
+                $whereParts[] = "$join $condition";
+            }
         }
     }
 
@@ -393,8 +401,18 @@ function refreshSetDropdowns(){
 }
 
 function addWhereRow(){
+    const count = document.querySelectorAll('.where-row').length;
+    const connector = (count > 0)
+        ? `<select name="where_join[]" style="width:80px;">
+                <option value="AND">AND</option>
+                <option value="OR">OR</option>
+           </select>`
+        : `<input type="hidden" name="where_join[]" value="AND">`; // first row always treated as AND
+
     document.getElementById('whereRows').insertAdjacentHTML('beforeend',`
         <div class="where-row" style="display:flex; gap:10px; margin-top:5px; align-items:center;">
+
+            ${connector}
             ${columnSelect('where_col[]')}
             <select name="where_op[]" style="width:120px;">
                 <option value="=">=</option>
