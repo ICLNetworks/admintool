@@ -48,6 +48,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     echo json_encode($data);
     exit;
 }
+
+// AJAX: UPDATE QUERY
+if (isset($_POST['updateAjax'])) {
+    $table = $_POST['table'];
+    $setCols = $_POST['set_col'] ?? [];
+    $setVals = $_POST['set_val'] ?? [];
+    $whereCols = $_POST['where_col'] ?? [];
+    $whereVals = $_POST['where_val'] ?? [];
+
+    $setParts = [];
+    foreach($setCols as $i=>$c){
+        if($c !== "") $setParts[] = "`$c` = ?";
+    }
+
+    $whereParts = [];
+    foreach($whereCols as $i=>$c){
+        if($c !== "") $whereParts[] = "`$c` = ?";
+    }
+
+    if(empty($setParts) || empty($whereParts)){
+        echo json_encode(['error'=>"❗ SET and WHERE cannot be empty"]);
+        exit;
+    }
+
+    $sql = "UPDATE `$table` SET ".implode(", ",$setParts)." WHERE ".implode(" AND ",$whereParts);
+    $stmt = $conn->prepare($sql);
+
+    $vals = array_merge($setVals, $whereVals);
+    $stmt->bind_param(str_repeat("s", count($vals)), ...$vals);
+    $stmt->execute();
+
+    echo json_encode(['error'=>$stmt->error,'affected'=>$stmt->affected_rows]);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -137,7 +171,29 @@ th { background:#007bff; color:#fff; }
     </form>
 </div>
 
-<div id="updateTab" class="tab-content"><p>Update functionality coming soon.</p></div>
+<div id="updateTab" class="tab-content">
+    <form id="updateForm">
+        <label>Select Table:</label>
+        <select name="table" id="updateTable">
+            <option value="">-- Select Table --</option>
+            <?php foreach($tables as $t): ?>
+                <option value="<?= $t ?>"><?= $t ?></option>
+            <?php endforeach; ?>
+        </select>
+        
+        <div id="updateBuilder" style="display:none; margin-top:20px;">
+            <h3>SET (Columns to Update)</h3>
+            <div id="setRows"></div>
+            <button type="button" onclick="addSetRow()">+ Add Column</button>
+            
+            <h3 style="margin-top:20px;">WHERE (Conditions)</h3>
+            <div id="whereRows"></div>
+            <button type="button" onclick="addWhereRow()">+ Add Condition</button>
+            <button type="submit" style="margin-top:20px;">UPDATE</button>
+            <p id="updateMessage" style="margin-top:10px; font-weight:bold;"></p>
+        </div>
+    </form>
+</div>
 <div id="deleteTab" class="tab-content"><p>Delete functionality coming soon.</p></div>
 </div>
 
@@ -242,6 +298,70 @@ document.getElementById('viewForm').addEventListener('submit', function(e){
 });
 
 window.onload = ()=> openTab('viewTab');
+
+let updColumns = [];
+
+document.getElementById('updateTable').addEventListener('change', function(){
+    const table = this.value;
+    if(!table){
+        document.getElementById('updateBuilder').style.display='none';
+        return;
+    }
+
+    fetch('', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'getColumns='+table
+    })
+    .then(res=>res.json())
+    .then(cols=>{
+        updColumns = cols;
+        document.getElementById('setRows').innerHTML='';
+        document.getElementById('whereRows').innerHTML='';
+        addSetRow();
+        addWhereRow();
+        document.getElementById('updateBuilder').style.display='block';
+    });
+});
+
+function columnSelect(name){
+    let html = `<select name="${name}"><option value="">-- Column --</option>`;
+    updColumns.forEach(c => html += `<option value="${c}">${c}</option>`);
+    return html + `</select>`;
+}
+
+function addSetRow(){
+    document.getElementById('setRows').insertAdjacentHTML('beforeend',`
+        <div style="display:flex; gap:10px; margin-top:5px;">
+            ${columnSelect('set_col[]')}
+            <input type="text" name="set_val[]" placeholder="Enter Value">
+        </div>
+    `);
+}
+
+function addWhereRow(){
+    document.getElementById('whereRows').insertAdjacentHTML('beforeend',`
+        <div style="display:flex; gap:10px; margin-top:5px;">
+            ${columnSelect('where_col[]')}
+            <input type="text" name="where_val[]" placeholder="Enter Value">
+        </div>
+    `);
+}
+
+document.getElementById('updateForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const formData = new FormData(this);
+    formData.append('updateAjax',1);
+
+    fetch('', { method:'POST', body:formData })
+    .then(r=>r.json())
+    .then(d=>{
+        const msg = document.getElementById('updateMessage');
+        msg.style.color = d.error ? 'red' : 'green';
+        msg.innerText = d.error ? d.error : `✅ Updated ${d.affected} row(s) successfully`;
+    });
+});
+
 </script>
 
 </body>
